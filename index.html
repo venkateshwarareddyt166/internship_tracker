@@ -1,0 +1,309 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Internship Tracker</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(120deg, #667eea, #764ba2);
+    margin: 0;
+    padding: 30px 15px;
+    color: #333;
+}
+
+.container {
+    background: white;
+    max-width: 850px;
+    margin: auto;
+    padding: 30px;
+    border-radius: 18px;
+    box-shadow: 0 5px 25px #2224;
+}
+
+h1 {
+    text-align: center;
+    color: #7048c8;
+}
+
+.subtitle {
+    text-align: center;
+    color: #777;
+    margin-bottom: 30px;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.stat {
+    background: #f1edff;
+    padding: 18px 8px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.stat h2 {
+    color: #7048c8;
+    margin: 5px;
+}
+
+.stat p {
+    font-size: 13px;
+    margin: 5px;
+}
+
+input, select, button {
+    padding: 12px;
+    margin: 6px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+input {
+    width: 100%;
+}
+
+button {
+    background: #7048c8;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #5632a5;
+}
+
+.add-btn {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.job {
+    background: #f5f2ff;
+    padding: 18px;
+    margin: 15px 0;
+    border-left: 5px solid #805ad5;
+    border-radius: 10px;
+}
+
+.job h3 {
+    margin: 0 0 8px;
+    color: #5632a5;
+}
+
+.job select {
+    width: 65%;
+}
+
+.delete {
+    background: #e74c3c;
+    margin-left: 5px;
+}
+
+.empty {
+    text-align: center;
+    color: #888;
+    padding: 25px;
+}
+
+@media(max-width: 550px) {
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .container {
+        padding: 20px;
+    }
+
+    .job select {
+        width: 100%;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🎯 Internship Tracker</h1>
+<p class="subtitle">Track your internship applications in one place</p>
+
+<div class="stats">
+    <div class="stat">
+        <h2 id="total">0</h2>
+        <p>Total Applications</p>
+    </div>
+
+    <div class="stat">
+        <h2 id="applied">0</h2>
+        <p>Applied</p>
+    </div>
+
+    <div class="stat">
+        <h2 id="interview">0</h2>
+        <p>Interview</p>
+    </div>
+
+    <div class="stat">
+        <h2 id="selected">0</h2>
+        <p>Selected</p>
+    </div>
+</div>
+
+<h3>Add New Application</h3>
+
+<input type="text" id="company"
+placeholder="Company Name">
+
+<input type="text" id="role"
+placeholder="Job Role">
+
+<button class="add-btn" onclick="addJob()">
++ Add Application
+</button>
+
+<hr>
+
+<h3>Application History</h3>
+
+<div id="jobs"></div>
+
+</div>
+
+<script>
+
+let jobs = JSON.parse(
+    localStorage.getItem("internships") || "[]"
+);
+
+function saveData() {
+    localStorage.setItem(
+        "internships",
+        JSON.stringify(jobs)
+    );
+}
+
+function addJob() {
+    let company = document.getElementById("company").value.trim();
+    let role = document.getElementById("role").value.trim();
+
+    if (!company || !role) {
+        alert("Please enter company name and job role");
+        return;
+    }
+
+    jobs.push({
+        id: Date.now(),
+        company: company,
+        role: role,
+        status: "Applied"
+    });
+
+    saveData();
+
+    document.getElementById("company").value = "";
+    document.getElementById("role").value = "";
+
+    displayJobs();
+}
+
+function updateStatus(id, status) {
+    jobs = jobs.map(job => {
+        if (job.id === id) {
+            job.status = status;
+        }
+        return job;
+    });
+
+    saveData();
+    displayJobs();
+}
+
+function deleteJob(id) {
+    if (confirm("Delete this application?")) {
+        jobs = jobs.filter(job => job.id !== id);
+        saveData();
+        displayJobs();
+    }
+}
+
+function displayJobs() {
+
+    let container = document.getElementById("jobs");
+
+    container.innerHTML = "";
+
+    if (jobs.length === 0) {
+        container.innerHTML =
+            '<div class="empty">No applications yet. Add your first internship!</div>';
+    }
+
+    jobs.forEach(job => {
+
+        container.innerHTML += `
+        <div class="job">
+
+            <h3>${escapeHTML(job.company)}</h3>
+
+            <p><b>Role:</b> ${escapeHTML(job.role)}</p>
+
+            <p><b>Status:</b> ${escapeHTML(job.status)}</p>
+
+            <select onchange="updateStatus(${job.id}, this.value)">
+                <option ${job.status === "Applied" ? "selected" : ""}>Applied</option>
+                <option ${job.status === "Interview" ? "selected" : ""}>Interview</option>
+                <option ${job.status === "Selected" ? "selected" : ""}>Selected</option>
+                <option ${job.status === "Rejected" ? "selected" : ""}>Rejected</option>
+            </select>
+
+            <button class="delete"
+            onclick="deleteJob(${job.id})">
+            Delete
+            </button>
+
+        </div>
+        `;
+    });
+
+    document.getElementById("total").innerText = jobs.length;
+
+    document.getElementById("applied").innerText =
+        jobs.filter(j => j.status === "Applied").length;
+
+    document.getElementById("interview").innerText =
+        jobs.filter(j => j.status === "Interview").length;
+
+    document.getElementById("selected").innerText =
+        jobs.filter(j => j.status === "Selected").length;
+}
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
+displayJobs();
+
+</script>
+
+</body>
+</html>
